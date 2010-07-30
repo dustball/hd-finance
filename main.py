@@ -16,11 +16,28 @@
 #
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
+from google.appengine.api import urlfetch, memcache 
+
+from keys import USERNAME, PASSWORD
+
+
+post_with_params = "username=" + USERNAME + "&password=" + PASSWORD + "&remember=T&submit=L&timezone=-8&nextPage=&browser=Chrome&browserVersion=5,&os=Mac&validation={'validators':[{'name':'username','func':'isNotEmpty','type':'inline','copy':'Please enter your email address.'},{'name':'username','func':'isEmail','type':'inline','copy':'email address must be a valid email.'},{'name':'password','func':'isNotEmpty','type':'inline','copy':'Please enter your password.'}],'validatorn':2}"
+
+def get_money_from_mint():
+    money = memcache.get("money")
+    if not money:
+        money = 10
+        header = urlfetch.fetch("https://wwws.mint.com/login.event").headers
+        response_after_login = urlfetch.fetch("https://wwws.mint.com/loginUserSubmit.xevent",method='POST', follow_redirects=False, payload=post_with_params, headers=header)
+        return str(response_after_login.headers) + "////" + str(response_after_login.content)
+#        memcache.set("money", money, 3600)
+    return money
 
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
-        self.response.out.write('Hello world!')
+        money = get_money_from_mint()
+        self.response.out.write('Money in the bank:!' + str(money))
 
 
 def main():
